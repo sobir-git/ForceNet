@@ -1,5 +1,6 @@
 # -*- mode: python -*-
-
+import main
+version = main.__version__
 block_cipher = None
 
 
@@ -34,4 +35,4 @@ coll = COLLECT(exe,
                a.datas,
                strip=False,
                upx=True,
-               name='ForceNet')
+               name='ForceNet_v'+version)
