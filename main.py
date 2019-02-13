@@ -1,5 +1,5 @@
-__version__ = 0.2
-
+__version__ = "0.2.1"
+import os
 import time
 import multiprocessing as mp
 import queue
@@ -99,6 +99,7 @@ def main():
 
     # a liberty countdown timer, initially 5 seconds
     liberty_countdown = CountdownTimer(10)
+    liberty_countdown.start()
 
     while True:
         # check liberty
@@ -142,5 +143,13 @@ if __name__ == '__main__':
     except BaseException as e:
         tb = traceback.format_exc()
         print(tb)
-        with open(time.strftime("%Y %d %b %H-%M-%S.log"), 'w') as f:
+        join = os.path.join
+        homepath = os.getenv('homepath')
+        forcedir = join(homepath, 'ForceNet')
+        logdir = join(forcedir, 'logs')
+        if not os.path.exists(forcedir):
+            os.mkdir(forcedir)
+        if not os.path.exists(logdir):
+            os.mkdir(logdir)
+        with open(join(logdir, time.strftime("%Y %d %b %H-%M-%S.log")), 'w') as f:
             f.write(tb)
