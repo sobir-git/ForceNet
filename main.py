@@ -97,8 +97,8 @@ def main():
     # ping interval in seconds
     ping_interval = config.getfloat('main', 'ping_interval')
 
-    # # a liberty countdown timer
-    liberty_countdown = None
+    # a liberty countdown timer, initially 5 seconds
+    liberty_countdown = CountdownTimer(10)
 
     while True:
         # check liberty
