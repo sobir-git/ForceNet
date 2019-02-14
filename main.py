@@ -129,7 +129,7 @@ def main():
 
         # sleeping zzZz
         if freeze:
-            time.sleep(1)
+            pass  # don't sleep, look for connection!
         else:
             time.sleep(ping_interval)
 
