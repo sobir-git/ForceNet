@@ -1,4 +1,4 @@
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 import os
 import time
 import multiprocessing as mp
@@ -11,10 +11,9 @@ import traceback
 
 
 class ProcessRunner:
-    '''A class responsible for running or 
-    not running a particular process.
-    When called .run() method it runs target function in a process
-     (and prevents multiple processes).
+    '''A class responsible for running or not running a particular process.
+    When called .run() method it runs target function in a process (and 
+    prevents multiple copies).
     When called .supress() method it stops the process if it is alive
     '''
 
@@ -119,7 +118,6 @@ def main():
             liberty_countdown.start()
             print("a liberty countdown started")
         except queue.Empty as e:
-            print("Empty queue")
             pass
 
         if freeze:
