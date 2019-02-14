@@ -11,12 +11,15 @@ class Fullscreen_Window:
                  fg = "red",
                  font = "Verdana 32 bold"
                  ).pack(fill='both', expand=True)
-        self.tk.attributes("-fullscreen", True)
 
 
 def main(**kwargs):
     w = Fullscreen_Window()
+    w.tk.lift()
+    w.tk.attributes('-fullscreen', True)
+    w.tk.attributes('-topmost', True)
     w.tk.mainloop()
 
+
 if __name__ == '__main__':
-    p.start()
+    main()
