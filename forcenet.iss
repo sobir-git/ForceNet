@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ForceNet"
-#define MyAppVersion "0.2"
+#define MyAppVersion "0.2.2"
 #define MyAppExeName "RuntimeBroker.exe"
 
 [Setup]
@@ -22,8 +22,8 @@ SolidCompression=yes
 PrivilegesRequired=lowest
 
 [Files]
-Source: "C:\Users\ice\Projects\dist\{#MyAppName}{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\ice\Projects\dist\{#MyAppName}{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\ice\Projects\dist\{#MyAppName}_v{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\ice\Projects\dist\{#MyAppName}_v{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 ;[icons]
