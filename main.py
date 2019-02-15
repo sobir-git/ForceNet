@@ -12,6 +12,9 @@ import traceback
 import threading
 import scheduler
 import freezer2
+import logging
+logging.basicConfig(filename='FNmain.log', level=logging.DEBUG)
+import multiprocessing
 
 
 class ThreadRunner:
@@ -95,19 +98,10 @@ class ForceNet:
     pinger_thread.freeze_event = threading.Event()
     pinger_thread.stop_event = threading.Event()
 
-    # # process responsible for freezing keyboard and mouse
-    # freezer_queue = []
-    # freezer_queue_lock = threading.Lock()
-    # freezer_proc = ThreadRunner(freezer.run, name="Freezer", 
-    #     kwargs={'password': password, 'queue': freezer_queue,
-    #     'queue_lock': freezer_queue_lock})
-
-    # freezer2_queue = mp.Queue()
-    # freezer2_proc = mp.Process(target=freezer2.run, kwargs={'queue': freezer2_queue, 'password': password})
-
     freezer = freezer2.Freezer(
         topmost=config.getboolean('main', 'topmost'),
-        fullscreen=config.getboolean('main', 'fullscreen'))
+        fullscreen=config.getboolean('main', 'fullscreen'),
+        text='CONNECT THE NETWORK CABLE')
 
     # a liberty countdown timer
     _liberty = False
@@ -172,12 +166,12 @@ class ForceNet:
 
     def freeze(self):
         if not self.freezer.is_running():
-            print("\t\t\t\tFREEZE!")
+            print("\t\t\t\tFORCEMET: FREEZE!")
             self.freezer.enable()
 
     def unfreeze(self):
         if self.freezer.is_running():
-            print("\t\t\t\tUN FREEZE!")
+            print("\t\t\t\tFORCEMET: UNFREEZE!")
             self.freezer.disable()
 
     def run(self):
@@ -215,6 +209,7 @@ class ForceNet:
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     fn = ForceNet()
     try:
         fn.run()

@@ -3,7 +3,7 @@ import tkinter as tk
 
 
 class MessageWindow:
-    '''A class for showing message on window both fullscreen and topmost.
+    '''A class for showing text message on window both fullscreen and topmost.
     Recommended to frequently call update() method to keep it responsive.
     '''
     _visible = False
@@ -12,8 +12,8 @@ class MessageWindow:
     def visible(self):
         return self._visible
 
-    def __init__(self, message, topmost=False, fullscreen=False):
-        self.message = message
+    def __init__(self, text, topmost=False, fullscreen=False):
+        self.text = text
         self.topmost = topmost
         self.fullscreen = fullscreen
 
@@ -24,7 +24,7 @@ class MessageWindow:
         self._visible = True
         root = tk.Tk()
         tk.Label(root, 
-                 text=self.message,
+                 text=self.text,
                  fg = "red",
                  font = "Verdana 32 bold"
                  ).pack(fill='both', expand=True)
