@@ -42,7 +42,7 @@ class Job:
         try:
             result = self.function(*self.args, **self.kwargs)
         except Exception as e:
-            print("Exception on calling a job")
+            print("Exception on calling a job: %s(*%r, **%r)" % (self.function.__name__, self.args, self.kwargs))
             traceback.print_exc()
             result = e
         return result
