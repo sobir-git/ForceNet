@@ -73,6 +73,7 @@ def _freeze(queue, conn, fullscreen, topmost, text):
 
     while True:
         s.run_pending()
+        time.sleep(0.01)
 
 
 class Freezer:
