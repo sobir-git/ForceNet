@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 import tkinter as tk
+import logging
+logger = logging.getLogger('main')
 
 
 class MessageWindow:
@@ -13,7 +15,8 @@ class MessageWindow:
         return self._visible
 
     def __init__(self, text, topmost=False, fullscreen=False):
-        self.text = text
+        # add at least an new line for loading-dots
+        self.text = text + '\n.'
         self.topmost = topmost
         self.fullscreen = fullscreen
 
@@ -23,11 +26,12 @@ class MessageWindow:
             return
         self._visible = True
         root = tk.Tk()
-        tk.Label(root, 
+        self.label = tk.Label(root, 
                  text=self.text,
                  fg = "red",
                  font = "Verdana 32 bold"
-                 ).pack(fill='both', expand=True)
+                 )
+        self.label.pack(fill='both', expand=True)
         root.lift()
         root.attributes('-fullscreen', self.fullscreen)
         root.attributes('-topmost', self.topmost)
@@ -46,13 +50,23 @@ class MessageWindow:
         '''Update the window'''
         if not self._visible:
             return
-        try: self.root.update()
-        except: pass
+
+        try:
+            line1, line2 = self.label['text'].splitlines()
+            dots = len(line2)
+            dots = 1 + (dots + 1) % 3
+            line2 = '.' * dots
+            self.label['text'] = line1 + '\n' + line2
+            self.root.update()
+        except Exception as e:
+            logger.error("Error updating MessageWindow: %s", e)
 
 
 if __name__ == '__main__':
-    mw = MessageWindow('TEST', True, True)
+    mw = MessageWindow('TEST', False, False)
     mw.show()
     mw.update()
     import time
-    time.sleep(1)
+    while True:
+        mw.update()
+        time.sleep(0.1)
