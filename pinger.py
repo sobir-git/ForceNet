@@ -17,8 +17,8 @@ class Pinger:
         '''Ping the host and return True(freeze) or False(unfreeze) according
         to number of failures.
         '''
-        result = ping(self.host, count=self.count, timeout=self.timeout)
-        print(f"pinging {self.host}: {result}")
+        result = ping(self.host, count=self.count)
+        # print(f"pinging {self.host}: {result}")
 
         if result:
             self._failures = 0
@@ -32,7 +32,7 @@ class Pinger:
         return self._failures > self.max_failures
 
 
-def ping(host, count, timeout):
+def ping(host, count):
     '''Ping a host and return True if sucess else False
     '''
     command = ['ping', '-n', str(count), host]
