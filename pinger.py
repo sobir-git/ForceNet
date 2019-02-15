@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 from my_subprocess import subprocess_args  # For safety in freeze mode
 import subprocess  # For executing a shell command
 
@@ -18,7 +19,7 @@ class Pinger:
         to number of failures.
         '''
         result = ping(self.host, count=self.count)
-        # print(f"pinging {self.host}: {result}")
+        # print("pinging %s: %s" % (self.host, result))
 
         if result:
             self._failures = 0

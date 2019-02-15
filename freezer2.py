@@ -1,3 +1,5 @@
+from __future__ import print_function, division
+
 import multiprocessing as mp
 import scheduler
 import time
@@ -8,7 +10,7 @@ import pythoncom
 import threading
 from message_window import MessageWindow
 DEBUG = os.getenv('freezer_debug') == '1'
-print(f"DEBUG={DEBUG}")
+print("DEBUG=%s" % DEBUG)
 
 
 class Freezer:
@@ -124,7 +126,7 @@ if __name__ == '__main__':
         events = filter(lambda e: hasattr(e, 'Key'), events)
         text = ''.join(map(lambda e: str(e.Key), events))
         if text:
-            print(f"text = {text}")
+            print("text = %s" % text)
         if '123' in text:
             freezer.disable()
         time.sleep(1)

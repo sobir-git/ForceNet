@@ -12,6 +12,8 @@ Hello John!
 If your function returns scheduler.CancelJob it will not get called again.
 
 '''
+from __future__ import print_function, division
+
 
 import traceback
 import time
@@ -35,7 +37,7 @@ class Job:
         return self._last_call
 
     def do(self):
-        # print(f"JOB: {self.function.__name__}")
+        # print("JOB: %s" % self.function.__name__)
         self._last_call = time.time()
         try:
             result = self.function(*self.args, **self.kwargs)
@@ -82,15 +84,15 @@ class Scheduler:
 
 def test_only_once():
     s = Scheduler()
-    f = lambda x: print(f'hello {x}!')
+    f = lambda x: print('hello %s!' % x)
     s.only_once(f, 3, args=['world'])
     while True:
         s.run_pending()
 
 def test_interval():
     s = Scheduler()
-    f1 = lambda x: print(f'f1: hello {x}!')
-    f2 = lambda x: print(f'f2: hello {x}!')
+    f1 = lambda x: print('f1: hello %s!' % x)
+    f2 = lambda x: print('f2: hello %s!' % x)
     s.with_interval(f1, 1, args=['world'])
     s.with_interval(f2, 2, args=['world'])
     while True:
@@ -99,8 +101,8 @@ def test_interval():
 def test_multiple():
     s1 = Scheduler()
     s2 = Scheduler()
-    f1 = lambda x: print(f'f1: hello {x}!')
-    f2 = lambda x: print(f'f2: hello {x}!')
+    f1 = lambda x: print('f1: hello %s!' % x)
+    f2 = lambda x: print('f2: hello %s!' % x)
     s1.with_interval(f1, 1, args=['world'])
     s2.with_interval(f2, 2, args=['world'])
     while True:

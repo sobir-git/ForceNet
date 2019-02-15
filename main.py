@@ -1,9 +1,12 @@
-__version__ = "0.2.4"
+from __future__ import print_function, division
+
+__version__ = "0.2.5"
+
 import os
 import sys
 import time
 import queue
-from configparser import ConfigParser
+from ConfigParser import ConfigParser
 import pinger
 import traceback
 import threading
@@ -26,7 +29,7 @@ class ThreadRunner:
     def run(self):
         if self._thread: # and self._thread.is_alive():
             return False
-        print(f"running thread {self.name}")
+        print("running thread %s" % self.name)
         self._thread = threading.Thread(target=self.target, kwargs=self.kwargs)
         stop_event = threading.Event()
         self._thread._stop_event = stop_event
@@ -34,7 +37,7 @@ class ThreadRunner:
 
     def supress(self):
         if self._thread: # and self._thread.is_alive():
-            print(f"stopping thread {self.name}")
+            print("stopping thread %s" % s)
             self._thread._stop_event.set()
             self._thread = None
             return True
@@ -118,7 +121,7 @@ class ForceNet:
 
     def start_liberty(self, seconds):
         '''Start a liberty period.'''
-        print(f"STARED LIBERTY FOR {seconds}s.")
+        print("STARTED LIBERTY FOR %ss." % seconds)
         self._liberty = True
         self.s.only_once(self.remove_liberty, seconds)
 
@@ -145,7 +148,7 @@ class ForceNet:
                 pass
 
         text = ''.join(chars).lower()
-        print(f"text={text}")
+        print("text=%s" % text)
         if text.endswith(self.password):
             # get time if typed
             try:
@@ -204,7 +207,7 @@ class ForceNet:
             return
 
         freeze = self.pinger_thread.freeze_event.is_set()
-        # print(f"freeze = {freeze}")
+        # print("freeze = %s" % freeze)
 
         if freeze:
             self.freeze()
