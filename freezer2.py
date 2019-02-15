@@ -45,7 +45,7 @@ class Hooker:
         return False
 
 
-def _freeze(queue, conn, fullscreen, topmost):
+def _freeze(queue, conn, fullscreen, topmost, text):
     '''Run hooking mouse and keyboard events.
     queue is used to to send keyboard and mouse events,
     conn is used to receive stop events'''
@@ -59,7 +59,7 @@ def _freeze(queue, conn, fullscreen, topmost):
                 print("IMMEDIATELY EXITING _freeze BY STOP SIGNAL")
                 sys.exit(0)
 
-    mw = MessageWindow("Freezer 2", fullscreen=fullscreen, topmost=topmost)
+    mw = MessageWindow(text=text, fullscreen=fullscreen, topmost=topmost)
     mw.show()
 
     hooker = Hooker(queue)
@@ -98,18 +98,17 @@ class Freezer:
 
     def is_running(self):
         '''Check if freezing process is running (formally .is_alive())'''
-        if not self._process:
-            return False
-        return self._process.is_alive()
+        return bool(self._process)
 
     def enable(self):
         '''Enable freezing. This will not do anything if freezing is not running. '''
         if not self.is_running():
-            print("enabling freezer")
+            print("Freezer: enabling freezer")
             conn1, conn2 = mp.Pipe()
             queue = mp.Queue()
             kwargs = {'queue': queue, 'conn': conn2,
-                      'fullscreen': self.fullscreen, 'topmost': self.topmost}
+                      'fullscreen': self.fullscreen, 'topmost': self.topmost,
+                      'text': self.text}
             process = mp.Process(target=_freeze, kwargs=kwargs)
             process.start()
 
@@ -121,9 +120,10 @@ class Freezer:
     def disable(self):
         '''Disable freezing. This will not do anything if freezing is already running.'''
         if self.is_running():
-            print("disabling freezer")
+            print("Freezer: disabling freezer")
             # self._process.terminate()
             self._conn.send({'action': 'stop'})
+            self._process = None
 
     def get_events(self):
         '''Get a list of events. The list contains only the last "max_events" number 
