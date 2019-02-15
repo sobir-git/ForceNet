@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 
-__version__ = "0.2.5"
+__version__ = "0.2.6dev"
 
 import os
 import sys
@@ -13,8 +13,37 @@ import threading
 import scheduler
 import freezer2
 import logging
-logging.basicConfig(filename='FNmain.log', level=logging.DEBUG)
 import multiprocessing
+
+
+# ================= ensure logging directory =====================
+join = os.path.join
+homepath = os.path.expanduser("~")
+forcedir = join(homepath, 'ForceNet')
+logdir = join(forcedir, 'logs')
+if not os.path.exists(forcedir):
+    os.mkdir(forcedir)
+if not os.path.exists(logdir):
+    os.mkdir(logdir)
+logfile = join(logdir, time.strftime("%Y %d %b %H-%M-%S.log"))
+
+logging.basicConfig(
+     filename=logfile,
+     level=logging.DEBUG, 
+     format= '[%(asctime)s] {%(name)s:%(lineno)d} %(levelname)-8s - %(message)s',
+     datefmt='%H:%M:%S'
+)
+
+# set up logging to console
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('main').addHandler(console)
+
+logger = logging.getLogger('main')
 
 
 class ThreadRunner:
@@ -32,7 +61,7 @@ class ThreadRunner:
     def run(self):
         if self._thread: # and self._thread.is_alive():
             return False
-        print("running thread %s" % self.name)
+        logger.debug("ThreadRunner: running thread %s", self.name)            
         self._thread = threading.Thread(target=self.target, kwargs=self.kwargs)
         stop_event = threading.Event()
         self._thread._stop_event = stop_event
@@ -40,7 +69,7 @@ class ThreadRunner:
 
     def supress(self):
         if self._thread: # and self._thread.is_alive():
-            print("stopping thread %s" % s)
+            logger.debug("ThreadRunner: stopping thread %s", self.name)            
             self._thread._stop_event.set()
             self._thread = None
             return True
@@ -113,11 +142,12 @@ class ForceNet:
          return self._liberty
 
     def remove_liberty(self):
+        logger.info("ForceNet: remove liberty")
         self._liberty = False
 
     def start_liberty(self, seconds):
         '''Start a liberty period.'''
-        print("STARTED LIBERTY FOR %ss." % seconds)
+        logger.info("ForceNet: start liberty fo %ss.", seconds)
         self._liberty = True
         self.s.only_once(self.remove_liberty, seconds)
 
@@ -141,8 +171,8 @@ class ForceNet:
                 append(key)
 
         text = ''.join(chars).lower()
-        print("text=%s" % text)
         if text.endswith(self.password):
+            logger.info("ForceNet: detected password")
             # get time if typed
             try:
                 timestr = text[:-len(self.password)]
@@ -166,12 +196,12 @@ class ForceNet:
 
     def freeze(self):
         if not self.freezer.is_running():
-            print("\t\t\t\tFORCEMET: FREEZE!")
+            logger.info("ForceNet: will freeze")
             self.freezer.enable()
 
     def unfreeze(self):
         if self.freezer.is_running():
-            print("\t\t\t\tFORCEMET: UNFREEZE!")
+            logger.info("ForceNet: will unfreeze")
             self.freezer.disable()
 
     def run(self):
@@ -179,28 +209,28 @@ class ForceNet:
         It checks for freeze flags from mypinger and 
         it calls for freezes and unfreezs accordingly.
         '''
+        logger.info("In ForceNet.run()")
         self.pinger_thread.start()
+
         s = self.s
         s.with_interval(self.loop, 0.1)
-        s.with_interval(self.check_events, 1)
+        s.with_interval(self.check_events, 0.1)
         try:
             while True:
                 s.run_pending()
                 time.sleep(0.01)
         except KeyboardInterrupt:
-            print("KeyboardInterrupt...")
+            logger.info("KeyboardInterrupt...")
             self.unfreeze()
             self.pinger_thread.stop_event.set()
 
     def loop(self):
         '''Main loop'''
         if self.get_liberty():
-            # print("in liberty")
             self.unfreeze()
             return
 
         freeze = self.pinger_thread.freeze_event.is_set()
-        # print("freeze = %s" % freeze)
 
         if freeze:
             self.freeze()
@@ -210,19 +240,11 @@ class ForceNet:
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
+    logger.info("Initialization")
     fn = ForceNet()
     try:
         fn.run()
     except BaseException as e:
+        logger.error("Exception occured on ForceNet.run()")
         tb = traceback.format_exc()
-        print(tb)
-        join = os.path.join
-        homepath = os.getenv('homepath')
-        forcedir = join(homepath, 'ForceNet')
-        logdir = join(forcedir, 'logs')
-        if not os.path.exists(forcedir):
-            os.mkdir(forcedir)
-        if not os.path.exists(logdir):
-            os.mkdir(logdir)
-        with open(join(logdir, time.strftime("%Y %d %b %H-%M-%S.log")), 'w') as f:
-            f.write(tb)
+        loggin.error(tb)

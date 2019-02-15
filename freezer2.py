@@ -10,7 +10,8 @@ import pythoncom
 import threading
 from message_window import MessageWindow
 DEBUG = os.getenv('freezer_debug') == '1'
-print("DEBUG=%s" % DEBUG)
+import logging
+logger = logging.getLogger('freezer')
 
 
 class Hooker:
@@ -40,7 +41,7 @@ class Hooker:
 
     def OnKeyboardEvent(self, event):
         key = event.Key
-        print("Key:", key)
+        logger.debug("KEYPRESS: %s", key)
         self.queue.put(event)
         return False
 
@@ -49,14 +50,14 @@ def _freeze(queue, conn, fullscreen, topmost, text):
     '''Run hooking mouse and keyboard events.
     queue is used to to send keyboard and mouse events,
     conn is used to receive stop events'''
-    print("freezer2: ITS FREEZING")
+    logger.info("in _freeze()")
 
     def check_stop_signal():
         '''Check for stop signal from process connection '''
         if conn.poll():
             message = conn.recv()
             if message['action'] == 'stop':
-                print("IMMEDIATELY EXITING _freeze BY STOP SIGNAL")
+                logger.info("_freeze: exitting by stop signal")
                 sys.exit(0)
 
     mw = MessageWindow(text=text, fullscreen=fullscreen, topmost=topmost)
@@ -85,8 +86,8 @@ class Freezer:
         Args:
             max_events: int: The maximum number of events stored (defaults to 100)
             text: str: Text message to display when frozen (defaults to "Frozen")
-            fullscreen: bool: Show message window fullscreen
-            topmost: bool: Show message window topmost
+            fullscreen: bool: Show message window fullscreen (defaults to False)
+            topmost: bool: Show message window topmost (defaults to False)
         '''
         self.fullscreen = fullscreen
         self.topmost = topmost
@@ -103,11 +104,12 @@ class Freezer:
     def enable(self):
         '''Enable freezing. This will not do anything if freezing is not running. '''
         if not self.is_running():
-            print("Freezer: enabling freezer")
+            logger.info('Freezer.enable()')
             conn1, conn2 = mp.Pipe()
             queue = mp.Queue()
             kwargs = {'queue': queue, 'conn': conn2,
-                      'fullscreen': self.fullscreen, 'topmost': self.topmost,
+                      'fullscreen': self.fullscreen, 
+                      'topmost': self.topmost,
                       'text': self.text}
             process = mp.Process(target=_freeze, kwargs=kwargs)
             process.start()
@@ -120,7 +122,7 @@ class Freezer:
     def disable(self):
         '''Disable freezing. This will not do anything if freezing is already running.'''
         if self.is_running():
-            print("Freezer: disabling freezer")
+            logger.info('Freezer.disable()')
             # self._process.terminate()
             self._conn.send({'action': 'stop'})
             self._process = None
@@ -136,8 +138,7 @@ class Freezer:
 
 
 if __name__ == '__main__':
-    print('__name__ == __main__')
-    freezer = Freezer()
+    freezer = Freezer(topmost=False, fullscreen=False)
     freezer.enable()
     while True:
         events = freezer.get_events()
