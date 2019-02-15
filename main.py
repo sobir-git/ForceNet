@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 
-__version__ = "0.2.6dev"
+__version__ = "0.2.6"
 
 import os
 import sys
@@ -11,7 +11,7 @@ import pinger
 import traceback
 import threading
 import scheduler
-import freezer2
+import freezer
 import logging
 import multiprocessing
 
@@ -30,9 +30,10 @@ logfile = join(logdir, time.strftime("%Y %d %b %H-%M-%S.log"))
 logging.basicConfig(
      filename=logfile,
      level=logging.DEBUG, 
-     format= '[%(asctime)s] {%(name)s:%(lineno)d} %(levelname)-8s - %(message)s',
+     format= '[%(asctime)s] {%(name)-8s:%(lineno)-4d} %(levelname)-8s - %(message)s',
      datefmt='%H:%M:%S'
 )
+
 
 # set up logging to console
 console = logging.StreamHandler()
@@ -41,9 +42,8 @@ console.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 # add the handler to the root logger
-logging.getLogger('main').addHandler(console)
-
 logger = logging.getLogger('main')
+logger.addHandler(console)
 
 
 class ThreadRunner:
@@ -127,7 +127,7 @@ class ForceNet:
     pinger_thread.freeze_event = threading.Event()
     pinger_thread.stop_event = threading.Event()
 
-    freezer = freezer2.Freezer(
+    freezer = freezer.Freezer(
         topmost=config.getboolean('main', 'topmost'),
         fullscreen=config.getboolean('main', 'fullscreen'),
         text='CONNECT THE NETWORK CABLE')
