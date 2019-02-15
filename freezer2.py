@@ -13,72 +13,88 @@ DEBUG = os.getenv('freezer_debug') == '1'
 print("DEBUG=%s" % DEBUG)
 
 
-class Freezer:
-    '''Freezer class containing enable and disable methods.
-    When called enable() it will hook keyboard and mouse and shows
-    a message text on screen.
-    '''
-    def __init__(self, max_events=100, text=None):
-        '''Init
-        Args:
-            max_events: int: The maximum number of events stored (defaults to 100)
-            text: str: Text message to display when frozen (defaults to "Frozen")
-        '''
-        self.max_events = max_events
-        self.text = text or "Frozen"
-        self._process = None
-        self._queue = None
-        self._events = []
-
-    def OnMouseEvent(self, event):
-        if DEBUG:
-            if tuple(event.Position) == (0, 0):
-                sys.exit(0)
-        self.P_queue.put(event)
-        if DEBUG: return True
-        else: return False
-
-    def OnKeyboardEvent(self, event):
-        key = event.Key
-        print("Key:", key)
-        self.P_queue.put(event)
-        return False
-
-    def _check_stop_signal(self):
-        '''Check for stop signal from process connection '''
-        if self.P_conn.poll():
-            message = self.P_conn.recv()
-            if message['action'] == 'stop':
-                print("IMMEDIATELY STOPPING BY STOP SIGNAL")
-                sys.exit(0)
-
-    def _freeze(self, queue, conn):
-        '''Run hooking mouse and keyboard events.
-        queue is used to to send keyboard and mouse events,
-        conn is used to receive stop events'''
-        print("freezer2: ITS FREEZING")
+class Hooker:
+    def __init__(self, queue):
         # create a hook manager
         hm = pyHook.HookManager()
         # watch for all mouse events
         hm.KeyDown = self.OnKeyboardEvent
         # watch for all mouse events
         hm.MouseAll = self.OnMouseEvent
-        hm.HookKeyboard()
-        hm.HookMouse()
+        self.hm = hm
+        self.queue = queue
 
-        self.P_queue = queue
-        self.P_conn = conn
+    def hook(self):
+        self.hm.HookKeyboard()
+        self.hm.HookMouse()
 
-        mw = MessageWindow("Freezer 2")
-        mw.show()
+    def OnMouseEvent(self, event):
+        if DEBUG:
+            if tuple(event.Position) == (0, 0):
+                sys.exit(0)
+        self.queue.put(event)
+        if DEBUG:
+            return True
+        else:
+            return False
 
-        s = scheduler.Scheduler()
-        s.with_interval(pythoncom.PumpWaitingMessages, 0.01)
-        s.with_interval(mw.update, 0.1)
-        s.with_interval(self._check_stop_signal, 0.1)
+    def OnKeyboardEvent(self, event):
+        key = event.Key
+        print("Key:", key)
+        self.queue.put(event)
+        return False
 
-        while True:
-            s.run_pending()
+
+def _freeze(queue, conn, fullscreen, topmost):
+    '''Run hooking mouse and keyboard events.
+    queue is used to to send keyboard and mouse events,
+    conn is used to receive stop events'''
+    print("freezer2: ITS FREEZING")
+
+    def check_stop_signal():
+        '''Check for stop signal from process connection '''
+        if conn.poll():
+            message = conn.recv()
+            if message['action'] == 'stop':
+                print("IMMEDIATELY EXITING _freeze BY STOP SIGNAL")
+                sys.exit(0)
+
+    mw = MessageWindow("Freezer 2", fullscreen=fullscreen, topmost=topmost)
+    mw.show()
+
+    hooker = Hooker(queue)
+    hooker.hook()
+
+    s = scheduler.Scheduler()
+    s.with_interval(pythoncom.PumpWaitingMessages, 0.01)
+    s.with_interval(mw.update, 0.1)
+    s.with_interval(check_stop_signal, 0.1)
+
+    while True:
+        s.run_pending()
+
+
+class Freezer:
+    '''Freezer class containing enable and disable methods.
+    When called enable() it will hook keyboard and mouse and shows
+    a message text on screen.
+    '''
+
+    def __init__(self, max_events=100, text=None, topmost=False, fullscreen=False):
+        '''Init
+        Args:
+            max_events: int: The maximum number of events stored (defaults to 100)
+            text: str: Text message to display when frozen (defaults to "Frozen")
+            fullscreen: bool: Show message window fullscreen
+            topmost: bool: Show message window topmost
+        '''
+        self.fullscreen = fullscreen
+        self.topmost = topmost
+        self.max_events = max_events
+        self.text = text or "Frozen"
+        self._process = None
+        self._queue = None
+        self._events = []
 
     def is_running(self):
         '''Check if freezing process is running (formally .is_alive())'''
@@ -92,7 +108,9 @@ class Freezer:
             print("enabling freezer")
             conn1, conn2 = mp.Pipe()
             queue = mp.Queue()
-            process = mp.Process(target=self._freeze, kwargs={'queue': queue, 'conn': conn2})
+            kwargs = {'queue': queue, 'conn': conn2,
+                      'fullscreen': self.fullscreen, 'topmost': self.topmost}
+            process = mp.Process(target=_freeze, kwargs=kwargs)
             process.start()
 
             self._events = []
