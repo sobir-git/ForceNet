@@ -105,9 +105,11 @@ class ForceNet:
     # freezer2_queue = mp.Queue()
     # freezer2_proc = mp.Process(target=freezer2.run, kwargs={'queue': freezer2_queue, 'password': password})
 
-    freezer = freezer2.Freezer()
+    freezer = freezer2.Freezer(
+        topmost=config.getboolean('main', 'topmost'),
+        fullscreen=config.getboolean('main', 'fullscreen'))
 
-    # a liberty countdown timer, initially 5 seconds
+    # a liberty countdown timer
     _liberty = False
 
     # scheduler for this class
@@ -136,16 +138,13 @@ class ForceNet:
         append = chars.append
         pop = chars.pop
         for e in events:
-            try:
-                key = e.Key
-                if key == 'Return':
-                    chars.clear()
-                elif key == 'Back' and chars:
-                    pop()
-                elif isinstance(key, str) and len(key) == 1:
-                    append(key)
-            except:
-                pass
+            key = getattr(e, 'Key', None)
+            if key == 'Return':
+                del chars[:]
+            elif key == 'Back' and chars:
+                pop()
+            elif isinstance(key, str) and len(key) == 1:
+                append(key)
 
         text = ''.join(chars).lower()
         print("text=%s" % text)
