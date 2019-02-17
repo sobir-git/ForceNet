@@ -1,0 +1,36 @@
+How to build
+This is python 2.7
+ForceNet version 0.3.0
+
+The requirements:
+	pywin32-224
+	pyhook-1.5.1
+	PyInstaller-3.4
+
+Note: pywin32 can be installed by wheels or with pip
+However there is a second step after installing pywin32. look at the 
+official github repo.
+
+Note: pyHook can be installed from wheels. I downloaded it from a famous
+"Unofficial python packages" website...
+
+
+RUN:
+python -m PyInstaller main.spec
+python -m PyInstaller forcenet_svc.spec
+
+Then copy forcenet_svc.exe file into Forcenet_v* folder.
+Make an installer using forcenet.iss (InnoSetup file)
+The installation requires admin priviliges.
+
+For manual installation:
+	forcenet_svc.exe --startup auto install
+	forcenet_svc.exe start
+	That's all.
+
+However you need to consider some:
+. The forcenet_svc logs will be on C:\forcenet_svc.log
+. The ForceNet logs will be saved on ~\ForceNet\logs. They logs files may
+  get very large since debug level.
+. Updating (overinstalling) is done only when service and processes manually removed. 
+  Uninstalling also needs this.

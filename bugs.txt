@@ -1,0 +1,17 @@
+* On some computer (old one) the "ForceNet.freeze()" log appears twice in a row
+also "PASSWORD DETECTED" appears twice. Also sometimes it freezes correctly but
+cannot unfreeze on network connection. It will unfreeze when password typed.
+
+* The service runs into exceptions when no user is logged on. You can see it on logs.
+However it will not break the program, just dumps unnecessary logs.
+
+* The service when spawns a new process it keeps the handle and checks the state of
+process by this handle. However a user may run other instances as much as he wants. 
+It will not have affects if there are a few instances,  but may become worse if there
+will be many of them.
+
+* The keypresses are logged and visible to user. This breaks the security rules. When password
+is typed correctly the user may see it from logs!
+
+
+TODO: Use sockets instead of subprocess with ping.
