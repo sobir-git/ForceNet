@@ -1,13 +1,12 @@
 # -*- mode: python -*-
-import main
-version = main.__version__
+
 block_cipher = None
 
 
-a = Analysis(['main.py'],
+a = Analysis(['forcenet_svc.py'],
              pathex=['C:\\Users\\ice\\Projects'],
              binaries=[],
-             datas=[('config.ini', '.')],
+             datas=[],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -16,26 +15,18 @@ a = Analysis(['main.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
-
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
-
 exe = EXE(pyz,
           a.scripts,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
           [],
-          exclude_binaries=True,
-          name='ForceNet',
+          name='forcenet_svc',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=('dev' in version)
-          )
-
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               name='ForceNet_v'+version)
+          runtime_tmpdir=None,
+          console=False )

@@ -1,9 +1,9 @@
 from __future__ import print_function, division
 
-__version__ = "0.2.6"
+__version__ = "0.3.0"
+
 
 import os
-import sys
 import time
 import queue
 from ConfigParser import ConfigParser
@@ -14,66 +14,60 @@ import scheduler
 import freezer
 import logging
 import multiprocessing
+import sys
 
 
-# ================= ensure logging directory =====================
-join = os.path.join
-homepath = os.path.expanduser("~")
-forcedir = join(homepath, 'ForceNet')
-logdir = join(forcedir, 'logs')
-if not os.path.exists(forcedir):
-    os.mkdir(forcedir)
-if not os.path.exists(logdir):
-    os.mkdir(logdir)
-logfile = join(logdir, time.strftime("%Y %d %b %H-%M-%S.log"))
-
-logging.basicConfig(
-     filename=logfile,
-     level=logging.DEBUG, 
-     format= '[%(asctime)s] {%(name)-8s:%(lineno)-4d} %(levelname)-8s - %(message)s',
-     datefmt='%H:%M:%S'
-)
+logger = None
 
 
-# set up logging to console
-console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
-# set a format which is simpler for console use
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-# add the handler to the root logger
-logger = logging.getLogger('main')
-logger.addHandler(console)
+def init():
+    '''Set up application working directory and logging'''
 
+    global logger
+    join = os.path.join
+    homepath = os.path.expanduser("~")
+    forcedir = join(homepath, 'ForceNet')
+    logdir = join(forcedir, 'logs')
+    if not os.path.exists(forcedir):
+        os.mkdir(forcedir)
+    if not os.path.exists(logdir):
+        os.mkdir(logdir)
+    logfile = join(logdir, time.strftime("%Y %d %b %H-%M-%S.log"))
 
-class ThreadRunner:
-    '''A class responsible for running or not running a particular thread.
-    When called .run() method it runs target function in a thread (and 
-    prevents multiple copies).
-    When called .supress() method it sets the stop_event of the thread
-    '''
-    def __init__(self, target, kwargs=None, name=None):
-        self.target = target
-        self.kwargs = kwargs or {}
-        self._thread = None
-        self.name = name
+    # determine if application is a script file or frozen exe
+    if getattr(sys, 'frozen', False):
+        # redirect all output to file
+        sys.stderr = open(join(logdir, time.strftime(
+            "%Y %d %b %H-%M-%S-stderr.txt")), 'w')
+        application_path = os.path.dirname(sys.executable)
+        # Note: The service executable which will run this app must also be in the same directory
+        # as in this case sys.executable will be the path to service executable
+    elif __file__:
+        application_path = os.path.dirname(__file__)
 
-    def run(self):
-        if self._thread: # and self._thread.is_alive():
-            return False
-        logger.debug("ThreadRunner: running thread %s", self.name)            
-        self._thread = threading.Thread(target=self.target, kwargs=self.kwargs)
-        stop_event = threading.Event()
-        self._thread._stop_event = stop_event
-        self._thread.start()
+    # work in application path
+    os.chdir(application_path)
 
-    def supress(self):
-        if self._thread: # and self._thread.is_alive():
-            logger.debug("ThreadRunner: stopping thread %s", self.name)            
-            self._thread._stop_event.set()
-            self._thread = None
-            return True
-        return False
+    logging.basicConfig(
+        filename=logfile,
+        level=logging.DEBUG,
+        format='[%(asctime)s] {%(name)-8s:%(lineno)-4d} %(levelname)-8s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+
+    # set up logging to console
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logger = logging.getLogger('main')
+    logger.debug("Logger created")
+    logger.addHandler(console)
+    logger.debug("Logger added console handler")
+    logger.debug("Working directory: %s", os.getcwd())
+    logger.debug("sys.executable = %s", sys.executable)
 
 
 def pingping(server, max_failures, ping_interval):
@@ -106,40 +100,48 @@ def pingping(server, max_failures, ping_interval):
 
 class ForceNet:
 
-    # read config
-    config = ConfigParser()
-    config.read('config.ini')
+    def __init__(self):
+        # password for liberty
+        self.password = 'simsimopen'
 
-    # password for liberty
-    password = 'simsimopen'
+        # read config
+        config = ConfigParser()
+        config.read('config.ini')
+        self.config = config
+        # get config values
+        # interval between pings in seconds
+        ping_interval = config.getfloat('main', 'ping_interval')
+        # the server to ping
+        server = config.get('main', 'server')
+        # fullscreen message window
+        fullscreen = config.getboolean('main', 'fullscreen')
+        # topmost message window
+        topmost = config.getboolean('main', 'topmost')
+        # max number of ping failures before freeze
+        max_failures = config.getint('main', 'max_failures')
 
-    # max number of ping failures before pc freezes
-    max_failures = config.getint('main', 'max_failures')
+        # create pinger thread
+        args = [server, max_failures, ping_interval]
+        pinger_thread = threading.Thread(
+            target=pingping, name="Pinger", args=args)
+        pinger_thread.freeze_event = threading.Event()
+        pinger_thread.stop_event = threading.Event()
+        self.pinger_thread = pinger_thread
 
-    # the server to ping
-    server = config.get('main', 'server')
+        # scheduler for this class
+        self.s = scheduler.Scheduler()
 
-    # ping interval in seconds
-    ping_interval = config.getfloat('main', 'ping_interval')
+        # a liberty boolean
+        self._liberty = False
 
-    # run pinger in a different thread
-    pinger_thread = threading.Thread(target=pingping, name="Pinger", args=[server, max_failures, ping_interval])
-    pinger_thread.freeze_event = threading.Event()
-    pinger_thread.stop_event = threading.Event()
-
-    freezer = freezer.Freezer(
-        topmost=config.getboolean('main', 'topmost'),
-        fullscreen=config.getboolean('main', 'fullscreen'),
-        text='CONNECT THE NETWORK CABLE')
-
-    # a liberty countdown timer
-    _liberty = False
-
-    # scheduler for this class
-    s = scheduler.Scheduler()
+        # freezer object
+        self.freezer = freezer.Freezer(
+            topmost=topmost,
+            fullscreen=fullscreen,
+            text='CONNECT THE NETWORK CABLE')
 
     def get_liberty(self):
-         return self._liberty
+        return self._liberty
 
     def remove_liberty(self):
         logger.info("ForceNet: remove liberty")
@@ -154,6 +156,7 @@ class ForceNet:
     def check_events(self):
         '''Check for other thread events '''
         # check for password events
+        logger.debug("check events")
         freezer = self.freezer
         if not freezer.is_running():
             return
@@ -211,10 +214,12 @@ class ForceNet:
         '''
         logger.info("In ForceNet.run()")
         self.pinger_thread.start()
+        logger.info("pinger_thread started")
 
         s = self.s
         s.with_interval(self.loop, 0.1)
         s.with_interval(self.check_events, 0.1)
+        logger.debug("added scheduler")
         try:
             while True:
                 s.run_pending()
@@ -239,12 +244,18 @@ class ForceNet:
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
-    logger.info("Initialization")
-    fn = ForceNet()
     try:
-        fn.run()
-    except BaseException as e:
-        logger.error("Exception occured on ForceNet.run()")
+        init()
+        logger.debug("Adding freeze support")
+        multiprocessing.freeze_support()
+        logger.info("Initialization")
+        fn = ForceNet()
+        try:
+            fn.run()
+        except BaseException as e:
+            logger.error("Exception occured on ForceNet.run()")
+            tb = traceback.format_exc()
+            logger.error(tb)
+    except Exception as e:
         tb = traceback.format_exc()
-        loggin.error(tb)
+        logger.error(tb)

@@ -2,37 +2,42 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ForceNet"
-#define MyAppVersion "0.2.2"
-#define MyAppExeName "RuntimeBroker.exe"
+#define MyAppVersion "0.3.0"
+#define MyAppExeName "ForceNet.exe"
+#define MyAppSvcName "forcenet_svc.exe"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{25D35130-2C7F-4457-AD59-0301358D947A}
+AppId={{7CCD8936-C55B-4FDB-AB62-3F1C6AD80C69}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-;AppVerName={#MyAppName} {#MyAppVersion}
-DefaultDirName={userpf}\{#MyAppName}
+AppVerName={#MyAppName} {#MyAppVersion}
+DefaultDirName={pf}\{#MyAppName}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputBaseFilename={#MyAppName}_v{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 
 [Files]
 Source: "C:\Users\ice\Projects\dist\{#MyAppName}_v{#MyAppVersion}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\ice\Projects\dist\{#MyAppName}_v{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
-;[icons]
-;Name: "{userstartup}\Blocker"; Filename: "{app}\{#MyAppExeName}";
-
-[Registry]
-;current user only
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RuntimeBroker"; ValueData: "{app}\{#MyAppExeName}";
-
-
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; todo: if updating, then first stop ForceNet service, stop ForcNet process, remove service.
+Filename: "{app}\{#MyAppSvcName}"; Flags: runascurrentuser; Parameters: "--startup auto install";  StatusMsg: "Installing service...";
+Filename: "{app}\{#MyAppSvcName}"; Flags: runascurrentuser; Parameters: "start"; StatusMsg: "Starting service...";
+
+;[PREUNINSTALL] Look for the exact word in documentation or the word may not exist at all
+; Before uninstalling first stop ForceNet service, stop ForcNet process, remove service.
+;Filename: "{app}\{#MyAppSvcName}"; Flags: runascurrentuser; Parameters: "stop";  StatusMsg: "Stopping service...";
+;Filename: "{app}\{#MyAppSvcName}"; Flags: runascurrentuser; Parameters: "remove"; StatusMsg: "Removing service...";
+
+
+; todo: installing: stop currently running
+; todo: installing: maybe update service?
+; todo: uninstalling: stop currently running
